@@ -166,30 +166,31 @@ ExceptionHandler(ExceptionType which)
        machine->WriteRegister(NextPCReg, machine->ReadRegister(NextPCReg)+4);
     } 
     else if ((which == SyscallException) && (type == SC_Time)) {
-       machine->WriteRegister(2, stats->totalTicks);
+        // this is a simple system call, just acces the global variable
+        // totalTicks
+        machine->WriteRegister(2, stats->totalTicks);
 
-       // Advance program counters
-       machine->WriteRegister(PrevPCReg, machine->ReadRegister(PCReg));
-       machine->WriteRegister(PCReg, machine->ReadRegister(NextPCReg));
-       machine->WriteRegister(NextPCReg, machine->ReadRegister(NextPCReg)+4);
+        // Advance program counters
+        machine->WriteRegister(PrevPCReg, machine->ReadRegister(PCReg));
+        machine->WriteRegister(PCReg, machine->ReadRegister(NextPCReg));
+        machine->WriteRegister(NextPCReg, machine->ReadRegister(NextPCReg)+4);
     } 
     else if ((which == SyscallException) && (type == SC_Yield)) {
-       machine->WriteRegister(2, currentThread->getPpid());
-        
-       Thread *nextThread;
-       IntStatus oldLevel = interrupt->SetLevel(IntOff);
+        // Increase the program counter before yielding
+        machine->WriteRegister(PrevPCReg, machine->ReadRegister(PCReg));
+        machine->WriteRegister(PCReg, machine->ReadRegister(NextPCReg));
+        machine->WriteRegister(NextPCReg, machine->ReadRegister(NextPCReg)+4);
 
-       nextThread = scheduler->FindNextToRun();
-       if (nextThread != NULL) {
-           scheduler->ReadyToRun(currentThread);
-           scheduler->Run(nextThread);
-       }
-       (void) interrupt->SetLevel(oldLevel);
+        // Find the next thread that needs to be scheduled
+        Thread *nextThread;
+        IntStatus oldLevel = interrupt->SetLevel(IntOff);
 
-       // Advance program counters
-       machine->WriteRegister(PrevPCReg, machine->ReadRegister(PCReg));
-       machine->WriteRegister(PCReg, machine->ReadRegister(NextPCReg));
-       machine->WriteRegister(NextPCReg, machine->ReadRegister(NextPCReg)+4);
+        nextThread = scheduler->FindNextToRun();
+        if (nextThread != NULL) {
+            scheduler->ReadyToRun(currentThread);
+            scheduler->Run(nextThread);
+        }
+        (void) interrupt->SetLevel(oldLevel);
     } 
     else {
         printf("Unexpected user mode exception %d %d\n", which, type);

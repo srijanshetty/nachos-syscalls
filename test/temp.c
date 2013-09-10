@@ -20,6 +20,7 @@ main()
     PrintInt(GetReg(34));
     PrintInt(GetReg(2));
     PrintInt(GetReg(34));
+    Yield();
     Halt();
     return 0;
 }
