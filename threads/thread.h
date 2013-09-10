@@ -81,6 +81,7 @@ class Thread {
     int machineState[MachineStateSize];  // all registers except for stackTop
 
   public:
+    static int pidCount;            // Maintain a count of pids
     Thread(char* debugName);		// initialize a Thread 
     ~Thread(); 				// deallocate a Thread
 					// NOTE -- thread being deleted
@@ -101,7 +102,9 @@ class Thread {
     void setStatus(ThreadStatus st) { status = st; }
     char* getName() { return (name); }
     void Print() { printf("%s, ", name); }
-
+    
+    // Return the threads pid
+    int getPid();
   private:
     // some of the private data for this class is listed above
     
@@ -116,7 +119,7 @@ class Thread {
 					// Used internally by Fork()
 
     int pid, ppid;			// My pid and my parent's pid
-
+    
 #ifdef USER_PROGRAM
 // A thread running a user program actually has *two* sets of CPU registers -- 
 // one for its state while executing user code, one for its state 

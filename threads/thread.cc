@@ -32,12 +32,19 @@
 //	"threadName" is an arbitrary string, useful for debugging.
 //----------------------------------------------------------------------
 
+// Initialize the thread count initially
+int Thread::pidCount = 0;
+
 Thread::Thread(char* threadName)
 {
     name = threadName;
     stackTop = NULL;
     stack = NULL;
     status = JUST_CREATED;
+
+    // Set the id Count and increment it in the process
+    pid = pidCount++;
+
 #ifdef USER_PROGRAM
     space = NULL;
 #endif
@@ -317,4 +324,10 @@ Thread::RestoreUserState()
     for (int i = 0; i < NumTotalRegs; i++)
 	machine->WriteRegister(i, userRegisters[i]);
 }
+
+int
+Thread::getPid() {
+    return pid;
+}
+
 #endif
