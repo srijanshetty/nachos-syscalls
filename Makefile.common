@@ -26,7 +26,7 @@
 # of liability and disclaimer of warranty provisions.
 
 #CFLAGS = -g -Wall -Wshadow -fwritable-strings $(INCPATH) $(DEFINES) $(HOST) -DCHANGED
-CFLAGS = -Wall -Wshadow $(INCPATH) $(DEFINES) $(HOST) -DCHANGED
+CFLAGS = -Wall -g -Wshadow $(INCPATH) $(DEFINES) $(HOST) -DCHANGED
 LDFLAGS =
 
 # These definitions may change as the software is updated.

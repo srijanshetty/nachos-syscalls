@@ -149,7 +149,7 @@ void PrintString (char *x);
 
 int GetReg (int regno);
 
-unsigned GetPA (unsigned vaddr);
+int GetPA (unsigned vaddr);
 
 int GetPID (void);
 

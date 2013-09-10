@@ -42,8 +42,16 @@ Thread::Thread(char* threadName)
     stack = NULL;
     status = JUST_CREATED;
 
-    pid = pidCount++; //pid of the process
-    ppid = currentThread->getPid(); // The pid of the calling thread
+    // Assign a PID to the process
+    ++pidCount;
+    pid = pidCount;
+    
+    // Assign the parent PID, zero for the first thread
+    if(pid == 1) {
+        ppid = 0;
+    } else {
+        ppid = currentThread->getPid();
+    }
 
 #ifdef USER_PROGRAM
     space = NULL;

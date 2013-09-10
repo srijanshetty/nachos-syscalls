@@ -121,8 +121,9 @@ ExceptionHandler(ExceptionType which)
        machine->WriteRegister(NextPCReg, machine->ReadRegister(NextPCReg)+4);
     } 
     else if ((which == SyscallException) && (type == SC_GetReg)) {
-       int reg = machine->ReadRegister(4);
-       machine->WriteRegister(2,machine->ReadRegister(reg));
+       int reg = (int) machine->ReadRegister(4);
+       reg = (int) machine->ReadRegister(reg);
+       machine->WriteRegister(2, reg);
 
        // Advance program counters
        machine->WriteRegister(PrevPCReg, machine->ReadRegister(PCReg));
@@ -131,17 +132,17 @@ ExceptionHandler(ExceptionType which)
     }
     else if ((which == SyscallException) && (type == SC_GetPA)) {
        int virtAddress = machine->ReadRegister(4);
-       int phyAddress;
-       machine->Translate(virtAddress, &phyAddress, 1 ,FALSE);
-       machine->WriteRegister(2, phyAddress);
+       unsigned vpn = (unsigned) virtAddress/PageSize;
 
-       // Advance program counters
-       machine->WriteRegister(PrevPCReg, machine->ReadRegister(PCReg));
-       machine->WriteRegister(PCReg, machine->ReadRegister(NextPCReg));
-       machine->WriteRegister(NextPCReg, machine->ReadRegister(NextPCReg)+4);
-    } 
-    else if ((which == SyscallException) && (type == SC_Time)) {
-       machine->WriteRegister(2, stats->totalTicks);
+       // Checking conditions
+       if(vpn > machine->pageTableSize) {
+           virtAddress = -1;
+       } else if (!machine->pageTable[vpn].valid) {
+           virtAddress = -1;
+       } else if (machine->pageTable[vpn].physicalPage > NumPhysPages ){
+           virtAddress = -1;
+       } 
+       machine->WriteRegister(2, virtAddress);
 
        // Advance program counters
        machine->WriteRegister(PrevPCReg, machine->ReadRegister(PCReg));
@@ -158,6 +159,32 @@ ExceptionHandler(ExceptionType which)
     } 
     else if ((which == SyscallException) && (type == SC_GetPPID)) {
        machine->WriteRegister(2, currentThread->getPpid());
+
+       // Advance program counters
+       machine->WriteRegister(PrevPCReg, machine->ReadRegister(PCReg));
+       machine->WriteRegister(PCReg, machine->ReadRegister(NextPCReg));
+       machine->WriteRegister(NextPCReg, machine->ReadRegister(NextPCReg)+4);
+    } 
+    else if ((which == SyscallException) && (type == SC_Time)) {
+       machine->WriteRegister(2, stats->totalTicks);
+
+       // Advance program counters
+       machine->WriteRegister(PrevPCReg, machine->ReadRegister(PCReg));
+       machine->WriteRegister(PCReg, machine->ReadRegister(NextPCReg));
+       machine->WriteRegister(NextPCReg, machine->ReadRegister(NextPCReg)+4);
+    } 
+    else if ((which == SyscallException) && (type == SC_Yield)) {
+       machine->WriteRegister(2, currentThread->getPpid());
+        
+       Thread *nextThread;
+       IntStatus oldLevel = interrupt->SetLevel(IntOff);
+
+       nextThread = scheduler->FindNextToRun();
+       if (nextThread != NULL) {
+           scheduler->ReadyToRun(currentThread);
+           scheduler->Run(nextThread);
+       }
+       (void) interrupt->SetLevel(oldLevel);
 
        // Advance program counters
        machine->WriteRegister(PrevPCReg, machine->ReadRegister(PCReg));

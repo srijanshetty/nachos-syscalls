@@ -15,7 +15,12 @@
 int
 main()
 {
-   PrintInt(GetPID());
-   return 0;
+    PrintInt(GetPID());
+    PrintInt(GetPPID());
+    PrintInt(GetReg(34));
+    PrintInt(GetReg(2));
+    PrintInt(GetReg(34));
+    Halt();
+    return 0;
 }
 
