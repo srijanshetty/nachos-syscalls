@@ -42,8 +42,8 @@ Thread::Thread(char* threadName)
     stack = NULL;
     status = JUST_CREATED;
 
-    // Set the id Count and increment it in the process
-    pid = pidCount++;
+    pid = pidCount++; //pid of the process
+    ppid = currentThread->getPid(); // The pid of the calling thread
 
 #ifdef USER_PROGRAM
     space = NULL;
@@ -330,4 +330,8 @@ Thread::getPid() {
     return pid;
 }
 
+int
+Thread::getPpid() {
+    return ppid;
+}
 #endif
