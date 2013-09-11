@@ -333,13 +333,47 @@ Thread::RestoreUserState()
 	machine->WriteRegister(i, userRegisters[i]);
 }
 
+//----------------------------------------------------------------------
+// Thread:getPid
+// returns the Pid of the current thread
+//----------------------------------------------------------------------
 int
 Thread::getPid() {
     return pid;
 }
 
+//----------------------------------------------------------------------
+// Thread:getPpid
+// returns the Ppid of the current thread
+//----------------------------------------------------------------------
 int
 Thread::getPpid() {
     return ppid;
+}
+
+//----------------------------------------------------------------------
+// forkStart 
+// function called when Fork system call is used
+//----------------------------------------------------------------------
+void 
+forkStart(int arg) {
+    
+    // When a forked thread is called the first time, it should appear as though
+    // it is just returing from the _SWITCH call
+    if (threadToBeDestroyed != NULL) {
+        delete threadToBeDestroyed;
+	threadToBeDestroyed = NULL;
+    }
+    
+#ifdef USER_PROGRAM
+    if (currentThread->space != NULL) {		// if there is an address space
+        currentThread->RestoreUserState();     // to restore, do it.
+	currentThread->space->RestoreState();
+    }
+#endif
+
+    // This statement starts running the user thread in the context of newly
+    // created thred
+    machine->Run();
 }
 #endif

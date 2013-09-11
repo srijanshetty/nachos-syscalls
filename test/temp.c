@@ -20,7 +20,6 @@ main()
     PrintInt(GetReg(34));
     PrintInt(GetReg(2));
     PrintInt(GetReg(34));
-    Sleep(1000);
     Halt();
     return 0;
 }

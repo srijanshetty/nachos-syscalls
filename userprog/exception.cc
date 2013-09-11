@@ -210,13 +210,48 @@ ExceptionHandler(ExceptionType which)
         } else {
             ListElement *waitingThread = new ListElement(currentThread,  stats->totalTicks + time);
             timerQueue->SortedInsert((void *)waitingThread, stats->totalTicks + time);  
+            // Sleep the current Process
+            IntStatus oldLevel = interrupt->SetLevel(IntOff);	// disable interrupts
+            currentThread->Sleep();
+            (void) interrupt->SetLevel(oldLevel);	// re-enable interrupts
         }
-
-        // Sleep the current Process
-        IntStatus oldLevel = interrupt->SetLevel(IntOff);	// disable interrupts
-        currentThread->Sleep();
-        (void) interrupt->SetLevel(oldLevel);	// re-enable interrupts
     } 
+    else if ((which == SyscallException) && (type == SC_Fork)) {
+        // Increase the program counter before sleeping 
+        machine->WriteRegister(PrevPCReg, machine->ReadRegister(PCReg));
+        machine->WriteRegister(PCReg, machine->ReadRegister(NextPCReg));
+        machine->WriteRegister(NextPCReg, machine->ReadRegister(NextPCReg)+4);
+        
+        // create a new kernel thread
+        Thread *child = new Thread("forked thread");
+        
+        // Copy the address space of the currentThread into the child thread
+        child->space = new AddrSpace(NULL);
+
+        // Copy the page table of the currentThread in the child Thread
+        child->SaveUserState();
+
+        // Now we copy the entire memory of the currentThread into the child
+        // Thread
+//        child->mainMemory = new char[MemorySize];
+ //       for (i = 0; i < MemorySize; i++)
+  //          child->mainMemory[i] = currentThread->mainMemory[i];
+
+        // Change the return address register to zero and save state
+        machine->WriteRegister(RetAddrReg, 0);
+        child->SaveUserState();
+
+        // Allocate the stack 
+        child->StackAllocate(&forkStart, 0);
+
+        // The child is now ready to run
+        IntStatus oldLevel = interrupt->SetLevel(IntOff);	// disable interrupts
+        scheduler->ReadyToRun(child);
+        (void) interrupt->SetLevel(oldLevel);	// re-enable interrupts
+
+        // Setting the return value of the parent thread
+        machine->WriteRegister(RetAddrReg, child->getPid());
+    }
     else {
         printf("Unexpected user mode exception %d %d\n", which, type);
         ASSERT(FALSE);

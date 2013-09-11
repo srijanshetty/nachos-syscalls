@@ -61,6 +61,7 @@ enum ThreadStatus { JUST_CREATED, RUNNING, READY, BLOCKED };
 // external function, dummy routine whose sole job is to call Thread::Print
 extern void ThreadPrint(int arg);	 
 
+extern void forkStart(int arg);            // the function which is called when a process is forked 
 // The following class defines a "thread control block" -- which
 // represents a single thread of execution.
 //
@@ -105,6 +106,10 @@ class Thread {
     // Return the threads pid
     int getPid();
     int getPpid();
+
+    void StackAllocate(VoidFunctionPtr func, int arg);
+    					// Allocate a stack for thread.
+					// Used internally by Fork()
   private:
     // some of the private data for this class is listed above
     
@@ -114,9 +119,6 @@ class Thread {
     ThreadStatus status;		// ready, running or blocked
     char* name;
 
-    void StackAllocate(VoidFunctionPtr func, int arg);
-    					// Allocate a stack for thread.
-					// Used internally by Fork()
 
     int pid, ppid;			// My pid and my parent's pid
     
@@ -126,12 +128,13 @@ class Thread {
 // while executing kernel code.
 
     int userRegisters[NumTotalRegs];	// user-level CPU register state
-
+    
   public:
     void SaveUserState();		// save user-level register state
     void RestoreUserState();		// restore user-level register state
 
     AddrSpace *space;			// User code this thread is running.
+
 #endif
 };
 
