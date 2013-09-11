@@ -250,7 +250,7 @@ ExceptionHandler(ExceptionType which)
         (void) interrupt->SetLevel(oldLevel);	// re-enable interrupts
 
         // Setting the return value of the parent thread
-        machine->WriteRegister(RetAddrReg, child->getPid());
+        //machine->WriteRegister(RetAddrReg, child->getPid());
     }
     else {
         printf("Unexpected user mode exception %d %d\n", which, type);
