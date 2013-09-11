@@ -18,6 +18,7 @@ Interrupt *interrupt;			// interrupt status
 Statistics *stats;			// performance metrics
 Timer *timer;				// the hardware timer device,
 					// for invoking context switches
+List *timerQueue;   // Queue of events waiting on the timer
 
 #ifdef FILESYS_NEEDED
 FileSystem  *fileSystem;
@@ -39,7 +40,6 @@ PostOffice *postOffice;
 // External definition, to allow us to take a pointer to this function
 extern void Cleanup();
 
-
 //----------------------------------------------------------------------
 // TimerInterruptHandler
 // 	Interrupt handler for the timer device.  The timer device is
@@ -60,8 +60,18 @@ extern void Cleanup();
 static void
 TimerInterruptHandler(int dummy)
 {
-    if (interrupt->getStatus() != IdleMode)
-	interrupt->YieldOnReturn();
+    //if (interrupt->getStatus() != IdleMode)
+	//interrupt->YieldOnReturn();
+    
+    int key;
+    Thread *readyThread;
+    while(timerQueue->firstKey() <= stats->totalTicks) {
+        readyThread = (Thread *)timerQueue->SortedRemove(&key);
+        
+        IntStatus oldLevel = interrupt->SetLevel(IntOff);	// disable interrupts
+        scheduler->ReadyToRun(readyThread);
+        (void) interrupt->SetLevel(oldLevel);	// re-enable interrupts
+    }
 }
 
 //----------------------------------------------------------------------
@@ -133,9 +143,9 @@ Initialize(int argc, char **argv)
     stats = new Statistics();			// collect statistics
     interrupt = new Interrupt;			// start up interrupt handling
     scheduler = new Scheduler();		// initialize the ready queue
-    if (randomYield)				// start the timer (if needed)
+    // if (randomYield)				// start the timer (if needed)
 	timer = new Timer(TimerInterruptHandler, 0, randomYield);
-
+    timerQueue = new List();        //list of threads waiting on the timer
     threadToBeDestroyed = NULL;
 
     // We didn't explicitly allocate the current thread we are running in.
@@ -191,7 +201,8 @@ Cleanup()
     delete timer;
     delete scheduler;
     delete interrupt;
-    
+    delete timerQueue;
+
     Exit(0);
 }
 

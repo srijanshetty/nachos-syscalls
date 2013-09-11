@@ -101,10 +101,10 @@ ExceptionHandler(ExceptionType which)
     else if ((which == SyscallException) && (type == SC_PrintChar)) {
         console->PutChar(machine->ReadRegister(4));   // echo it!
         writeDone->P() ;        // wait for write to finish
-       // Advance program counters.
-       machine->WriteRegister(PrevPCReg, machine->ReadRegister(PCReg));
-       machine->WriteRegister(PCReg, machine->ReadRegister(NextPCReg));
-       machine->WriteRegister(NextPCReg, machine->ReadRegister(NextPCReg)+4);
+        // Advance program counters.
+        machine->WriteRegister(PrevPCReg, machine->ReadRegister(PCReg));
+        machine->WriteRegister(PCReg, machine->ReadRegister(NextPCReg));
+        machine->WriteRegister(NextPCReg, machine->ReadRegister(NextPCReg)+4);
     }
     else if ((which == SyscallException) && (type == SC_PrintString)) {
        vaddr = machine->ReadRegister(4);
@@ -191,6 +191,31 @@ ExceptionHandler(ExceptionType which)
             scheduler->Run(nextThread);
         }
         (void) interrupt->SetLevel(oldLevel);
+    } 
+    else if ((which == SyscallException) && (type == SC_Sleep)) {
+        // Increase the program counter before sleeping 
+        machine->WriteRegister(PrevPCReg, machine->ReadRegister(PCReg));
+        machine->WriteRegister(PCReg, machine->ReadRegister(NextPCReg));
+        machine->WriteRegister(NextPCReg, machine->ReadRegister(NextPCReg)+4);
+        
+        // The time in number of ticks
+        int time = machine->ReadRegister(4);
+
+        // Yield if time is zero, or else insert the element in a sorted fashion
+        // into the timerQueue
+        if (time == 0) {
+            IntStatus oldLevel = interrupt->SetLevel(IntOff);	// disable interrupts
+            currentThread->Yield();
+            (void) interrupt->SetLevel(oldLevel);	// re-enable interrupts
+        } else {
+            ListElement *waitingThread = new ListElement(currentThread,  stats->totalTicks + time);
+            timerQueue->SortedInsert((void *)waitingThread, stats->totalTicks + time);  
+        }
+
+        // Sleep the current Process
+        IntStatus oldLevel = interrupt->SetLevel(IntOff);	// disable interrupts
+        currentThread->Sleep();
+        (void) interrupt->SetLevel(oldLevel);	// re-enable interrupts
     } 
     else {
         printf("Unexpected user mode exception %d %d\n", which, type);
