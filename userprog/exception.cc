@@ -226,14 +226,14 @@ ExceptionHandler(ExceptionType which)
         Thread *child = new Thread("forked thread");
         
         // Copy the address space of the currentThread into the child thread
-        child->space = new AddrSpace(NULL);
+        child->space = currentThread->space; 
 
         // Change the return address register to zero and save state
         machine->WriteRegister(2, 0);
         child->SaveUserState();
         
         // Setting the return value of the parent thread
-        //machine->WriteRegister(2, child->getPid());
+        machine->WriteRegister(2, child->getPid());
 
         // Allocate the stack 
         child->StackAllocate(&forkStart, 0);

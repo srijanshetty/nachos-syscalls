@@ -357,7 +357,7 @@ Thread::getPpid() {
 //----------------------------------------------------------------------
 void 
 forkStart(int arg) {
-    
+
     // When a forked thread is called the first time, it should appear as though
     // it is just returing from the _SWITCH call
     if (threadToBeDestroyed != NULL) {
