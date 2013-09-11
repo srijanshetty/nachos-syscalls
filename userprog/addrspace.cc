@@ -63,6 +63,17 @@ AddrSpace::AddrSpace(OpenFile *executable)
     unsigned int i, size;
 
     if(executable == NULL) {
+        pageTable = new TranslationEntry[numPages];
+        for (i = 0; i < numPages; i++) {
+            pageTable[i].virtualPage = i;	// for now, virtual page # = phys page #
+            pageTable[i].physicalPage = i;
+            pageTable[i].valid = TRUE;
+            pageTable[i].use = FALSE;
+            pageTable[i].dirty = FALSE;
+            pageTable[i].readOnly = FALSE;  // if the code segment was entirely on 
+            // a separate page, we could set its 
+            // pages to be read-only
+        }
     } else {
         executable->ReadAt((char *)&noffH, sizeof(noffH), 0);
         if ((noffH.noffMagic != NOFFMAGIC) && 

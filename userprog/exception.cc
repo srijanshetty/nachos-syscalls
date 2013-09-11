@@ -228,18 +228,12 @@ ExceptionHandler(ExceptionType which)
         // Copy the address space of the currentThread into the child thread
         child->space = new AddrSpace(NULL);
 
-        // Copy the page table of the currentThread in the child Thread
-        child->SaveUserState();
-
-        // Now we copy the entire memory of the currentThread into the child
-        // Thread
-//        child->mainMemory = new char[MemorySize];
- //       for (i = 0; i < MemorySize; i++)
-  //          child->mainMemory[i] = currentThread->mainMemory[i];
-
         // Change the return address register to zero and save state
-        machine->WriteRegister(RetAddrReg, 0);
+        machine->WriteRegister(2, 0);
         child->SaveUserState();
+        
+        // Setting the return value of the parent thread
+        //machine->WriteRegister(2, child->getPid());
 
         // Allocate the stack 
         child->StackAllocate(&forkStart, 0);
@@ -248,9 +242,6 @@ ExceptionHandler(ExceptionType which)
         IntStatus oldLevel = interrupt->SetLevel(IntOff);	// disable interrupts
         scheduler->ReadyToRun(child);
         (void) interrupt->SetLevel(oldLevel);	// re-enable interrupts
-
-        // Setting the return value of the parent thread
-        //machine->WriteRegister(RetAddrReg, child->getPid());
     }
     else {
         printf("Unexpected user mode exception %d %d\n", which, type);
