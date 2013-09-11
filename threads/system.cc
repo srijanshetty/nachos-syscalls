@@ -63,6 +63,10 @@ TimerInterruptHandler(int dummy)
     //if (interrupt->getStatus() != IdleMode)
 	//interrupt->YieldOnReturn();
     
+    if(timerQueue->IsEmpty()) {
+        return;
+    }
+    
     int key;
     Thread *readyThread;
     while(timerQueue->firstKey() <= stats->totalTicks) {
@@ -143,9 +147,9 @@ Initialize(int argc, char **argv)
     stats = new Statistics();			// collect statistics
     interrupt = new Interrupt;			// start up interrupt handling
     scheduler = new Scheduler();		// initialize the ready queue
+    timerQueue = new List();        //list of threads waiting on the timer
     // if (randomYield)				// start the timer (if needed)
 	timer = new Timer(TimerInterruptHandler, 0, randomYield);
-    timerQueue = new List();        //list of threads waiting on the timer
     threadToBeDestroyed = NULL;
 
     // We didn't explicitly allocate the current thread we are running in.
