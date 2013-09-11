@@ -19,6 +19,7 @@ Statistics *stats;			// performance metrics
 Timer *timer;				// the hardware timer device,
 					// for invoking context switches
 List *timerQueue;   // Queue of events waiting on the timer
+bool initializedConsoleSemaphores;  // For conosle
 
 #ifdef FILESYS_NEEDED
 FileSystem  *fileSystem;
@@ -94,6 +95,7 @@ Initialize(int argc, char **argv)
     int argCount;
     char* debugArgs = "";
     bool randomYield = FALSE;
+    initializedConsoleSemaphores = FALSE;
 
 #ifdef USER_PROGRAM
     bool debugUserProg = FALSE;	// single step user program

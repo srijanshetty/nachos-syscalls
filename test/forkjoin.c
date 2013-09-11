@@ -28,7 +28,7 @@ main()
        PrintString("Parent after fork waiting for child: ");
        PrintInt(x);
        PrintChar('\n');
-       Join(x);
+       //Join(x);
     }
     return 0;
 }

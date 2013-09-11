@@ -59,8 +59,14 @@ ExceptionHandler(ExceptionType which)
 {
     int type = machine->ReadRegister(2);
     int memval, vaddr, printval, tempval, exp;
-    readAvail = new Semaphore("read avail", 0);
-    writeDone = new Semaphore("write done", 0);
+
+    // New changes
+    if (!initializedConsoleSemaphores) {
+        readAvail = new Semaphore("read avail", 0);
+        writeDone = new Semaphore("write done", 1);
+        initializedConsoleSemaphores = true;
+    }
+
     Console *console = new Console(NULL, NULL, ReadAvail, WriteDone, 0);;
 
     if ((which == SyscallException) && (type == SC_Halt)) {
@@ -70,13 +76,13 @@ ExceptionHandler(ExceptionType which)
     else if ((which == SyscallException) && (type == SC_PrintInt)) {
        printval = machine->ReadRegister(4);
        if (printval == 0) {
-          console->PutChar('0');
           writeDone->P() ;
+          console->PutChar('0');
        }
        else {
           if (printval < 0) {
+              writeDone->P() ;
              console->PutChar('-');
-             writeDone->P() ;
              printval = -printval;
           }
           tempval = printval;
@@ -87,8 +93,8 @@ ExceptionHandler(ExceptionType which)
           }
           exp = exp/10;
           while (exp > 0) {
-             console->PutChar('0'+(printval/exp));
              writeDone->P() ;
+             console->PutChar('0'+(printval/exp));
              printval = printval % exp;
              exp = exp/10;
           }
@@ -99,8 +105,8 @@ ExceptionHandler(ExceptionType which)
        machine->WriteRegister(NextPCReg, machine->ReadRegister(NextPCReg)+4);
     }
     else if ((which == SyscallException) && (type == SC_PrintChar)) {
+         writeDone->P() ;
         console->PutChar(machine->ReadRegister(4));   // echo it!
-        writeDone->P() ;        // wait for write to finish
         // Advance program counters.
         machine->WriteRegister(PrevPCReg, machine->ReadRegister(PCReg));
         machine->WriteRegister(PCReg, machine->ReadRegister(NextPCReg));
@@ -110,8 +116,8 @@ ExceptionHandler(ExceptionType which)
        vaddr = machine->ReadRegister(4);
        machine->ReadMem(vaddr, 1, &memval);
        while ((*(char*)&memval) != '\0') {
+            writeDone->P() ;        // wait for write to finish
           console->PutChar(*(char*)&memval);
-          writeDone->P() ;
           vaddr++;
           machine->ReadMem(vaddr, 1, &memval);
        }

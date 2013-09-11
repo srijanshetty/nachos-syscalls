@@ -29,6 +29,7 @@ extern Interrupt *interrupt;			// interrupt status
 extern Statistics *stats;			// performance metrics
 extern Timer *timer;				// the hardware alarm clock
 extern List *timerQueue;            // queue of events waiting on a timer
+extern bool initializedConsoleSemaphores;   //For the console
 
 #ifdef USER_PROGRAM
 #include "machine.h"
