@@ -95,7 +95,7 @@ AddrSpace::AddrSpace(OpenFile *executable)
     // first, set up the translation 
     pageTable = new TranslationEntry[numPages];
     for (i = 0; i < numPages; i++) {
-        pageTable[i].virtualPage = i;	// for now, virtual page # = phys page #
+        pageTable[i].virtualPage = i;	
         pageTable[i].physicalPage = i;
         pageTable[i].valid = TRUE;
         pageTable[i].use = FALSE;
@@ -130,6 +130,13 @@ AddrSpace::AddrSpace(OpenFile *executable)
     }
 }
 
+//----------------------------------------------------------------------
+// AddrSpace::AddrSpace
+// 	Create an address space to run a user program.
+//  
+//  Setup the translation table
+//  Copy the physical memoy of the parent into the new page table
+//----------------------------------------------------------------------
 AddrSpace::AddrSpace(unsigned int numParentPages, unsigned int parentStartPhysPage)
 { 
     unsigned int i, k, size;

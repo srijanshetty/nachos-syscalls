@@ -242,6 +242,45 @@ ExceptionHandler(ExceptionType which)
         scheduler->ReadyToRun(child);
         (void) interrupt->SetLevel(oldLevel);	// re-enable interrupts
     }
+    else if ((which == SyscallException) && (type == SC_Exec)) {
+        // We are in the kernel space, we have to copy the name of the file 
+        // by translating using ReadMem
+        char filename[100];
+        int i=0;
+
+        vaddr = machine->ReadRegister(4);
+        machine->ReadMem(vaddr, 1, &memval);
+        while ((*(char*)&memval) != '\0') {
+            filename[i]  = (char)memval;
+            ++i;
+            vaddr++;
+            machine->ReadMem(vaddr, 1, &memval);
+        }
+        filename[i]  = (char)memval;
+
+        DEBUG('c', "\nNow opening file %s", filename);
+
+        OpenFile *executable = fileSystem->Open(filename);
+        AddrSpace *space;
+
+        if (executable == NULL) {
+            printf("Unable to open file %s\n", filename);
+            return;
+        }
+        DEBUG('c', "\nCreating an addresspace");
+        space = new AddrSpace(executable);    
+        currentThread->space = space;
+
+        delete executable;			// close file
+
+        space->InitRegisters();		// set the initial register values
+        space->RestoreState();		// load page table register
+
+        machine->Run();			// jump to the user progam
+        ASSERT(FALSE);			// machine->Run never returns;
+        // the address space exits
+        // by doing the syscall "exit"
+    }
     else {
         printf("Unexpected user mode exception %d %d\n", which, type);
         ASSERT(FALSE);

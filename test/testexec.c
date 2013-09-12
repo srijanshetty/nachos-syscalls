@@ -4,7 +4,7 @@ int
 main()
 {
     PrintString("Before calling Exec.\n");
-    Exec("vectorsum");
+    Exec("../test/vectorsum");
     PrintString("Returned from Exec.\n"); // Should never return
     return 0;
 }

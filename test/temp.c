@@ -20,14 +20,11 @@ main()
     Yield();
     int x = Fork();
     if(x == 0) {
-        PrintInt(1);
-        Yield();
+        Sleep(100);
     } else {
         PrintInt(1);
-        Sleep(100);
         PrintInt(0);
     }
-    Sleep(100);
     return 0;
 }
 
