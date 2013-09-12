@@ -258,8 +258,8 @@ ExceptionHandler(ExceptionType which)
         }
         filename[i]  = (char)memval;
 
-        DEBUG('c', "\nNow opening file %s", filename);
-
+        // The above is a direct copy of StartProcess, I didn't want to change
+        // its scope so it has been included here
         OpenFile *executable = fileSystem->Open(filename);
         AddrSpace *space;
 
@@ -267,7 +267,6 @@ ExceptionHandler(ExceptionType which)
             printf("Unable to open file %s\n", filename);
             return;
         }
-        DEBUG('c', "\nCreating an addresspace");
         space = new AddrSpace(executable);    
         currentThread->space = space;
 
