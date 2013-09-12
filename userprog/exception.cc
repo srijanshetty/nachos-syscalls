@@ -187,16 +187,8 @@ ExceptionHandler(ExceptionType which)
         machine->WriteRegister(PCReg, machine->ReadRegister(NextPCReg));
         machine->WriteRegister(NextPCReg, machine->ReadRegister(NextPCReg)+4);
 
-        // Find the next thread that needs to be scheduled
-        Thread *nextThread;
-        IntStatus oldLevel = interrupt->SetLevel(IntOff);
-
-        nextThread = scheduler->FindNextToRun();
-        if (nextThread != NULL) {
-            scheduler->ReadyToRun(currentThread);
-            scheduler->Run(nextThread);
-        }
-        (void) interrupt->SetLevel(oldLevel);
+        // Call yield method on the current thread
+        currentThread->Yield();
     } 
     else if ((which == SyscallException) && (type == SC_Sleep)) {
         // Increase the program counter before sleeping 
@@ -232,7 +224,8 @@ ExceptionHandler(ExceptionType which)
         Thread *child = new Thread("forked thread");
         
         // Copy the address space of the currentThread into the child thread
-        child->space = currentThread->space; 
+        // child->space = currentThread->space;
+        child->space = new AddrSpace(currentThread->space->getNumPages(), currentThread->space->getStartPhysPage()); 
 
         // Change the return address register to zero and save state
         machine->WriteRegister(2, 0);

@@ -17,8 +17,17 @@ main()
 {
     PrintInt(GetPID());
     PrintInt(GetPPID());
-    
-    Halt();
+    Yield();
+    int x = Fork();
+    if(x == 0) {
+        PrintInt(1);
+        Yield();
+    } else {
+        PrintInt(1);
+        Sleep(100);
+        PrintInt(0);
+    }
+    Sleep(100);
     return 0;
 }
 
