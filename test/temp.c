@@ -15,16 +15,13 @@
 int
 main()
 {
-    PrintInt(GetPID());
-    PrintInt(GetPPID());
-    Yield();
     int x = Fork();
     if(x == 0) {
+        PrintInt(0);
         Sleep(100);
     } else {
-        PrintInt(1);
-        PrintInt(0);
+        PrintInt(Join(2));
     }
-    return 0;
+    Exit(0);
 }
 

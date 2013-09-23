@@ -112,7 +112,10 @@ class Thread {
     Thread *parent;
 
     // To store the child pid
-    int child_pids[MAX_THREADS];
+    int *child_pids;
+
+    // To store the state of the children
+    int *child_state;
 
     // Return the threads pid
     int getPid();
@@ -133,7 +136,6 @@ class Thread {
     int pid, ppid;			// My pid and my parent's pid
    
     // State of the child
-    int child_state[MAX_THREADS];
 #ifdef USER_PROGRAM
 // A thread running a user program actually has *two* sets of CPU registers -- 
 // one for its state while executing user code, one for its state 
@@ -147,9 +149,10 @@ class Thread {
     AddrSpace *space;			// User code this thread is running.
 
     // To manipulate the state of the child state
-    void setChildState(int child_pid, int state);
-    void initializeChildState(int child_pid); 
     int searchChildPid(int child_pid);
+    void initializeChildState(int child_pid); 
+   
+    // To maintain the child counts
     void incrementChildCount();     // Increments the count of the number of variables
     void decrementChildCount();     // Decrement the count of the number of variables
 
