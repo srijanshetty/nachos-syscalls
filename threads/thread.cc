@@ -41,6 +41,10 @@ Thread::Thread(char* threadName)
     stackTop = NULL;
     stack = NULL;
     status = JUST_CREATED;
+    childCount = 0;
+    
+    // Initialize the parent to be NULL
+    parent = NULL;
 
     // Assign a PID to the process
     ++pidCount;
@@ -349,6 +353,69 @@ Thread::getPid() {
 int
 Thread::getPpid() {
     return ppid;
+}
+
+//----------------------------------------------------------------------
+// Thread:incrementChildCount
+// incrementt the child count
+//----------------------------------------------------------------------
+void
+Thread::incrementChildCount() {
+    childCount++;
+}
+
+//----------------------------------------------------------------------
+// Thread:decrementChildCount
+// decrement the child count
+//----------------------------------------------------------------------
+void
+Thread::decrementChildCount() {
+    childCount--;
+}
+
+//----------------------------------------------------------------------
+// Thread:initializeChildState
+// Insert a new pid into the child state array and set its state
+//----------------------------------------------------------------------
+void
+Thread::initializeChildState(int child_pid) {
+	DEBUG('j', "Adding %d to the child list of %d\n", child_pid, pid);
+    child_pids[childCount] = child_pid;
+    setChildState(child_pid, CHILD_LIVE); 
+    incrementChildCount();
+}
+
+//----------------------------------------------------------------------
+// Thread::setChildState
+// Set the child state to given state
+//----------------------------------------------------------------------
+void
+Thread::setChildState(int child_pid, int state) {
+	DEBUG('j', "Setting child(%d) to the state %d\n", child_pid, state);
+    // Loop through the child pids to get the index and then update
+    for(int i = 0; i< childCount; ++i) {
+        if(child_pids[i] == child_pid){
+            child_state[i] = state;
+        }
+    }
+}
+
+//----------------------------------------------------------------------
+// Thread::searchChildPid
+// Search the child list for a child parent
+//----------------------------------------------------------------------
+int
+Thread::searchChildPid(int child_pid) {
+	DEBUG('j', "Searching child(%d)\n", child_pid);
+    // Loop through the child pids to get the index and then update
+    for(int i = 0; i< childCount; ++i) {
+        if(child_pids[i] == child_pid){
+            return 1;
+        }
+    }
+
+    // If control reaches here then the element has not been found
+    return 0;
 }
 
 //----------------------------------------------------------------------

@@ -222,6 +222,12 @@ ExceptionHandler(ExceptionType which)
         
         // create a new kernel thread
         Thread *child = new Thread("forked thread");
+
+        // Set the parent of the child process
+        child->parent = currentThread;
+
+        // Add the child to the parent's list
+        currentThread->initializeChildState(child->getPid());
         
         // Copy the address space of the currentThread into the child thread
         // child->space = currentThread->space;

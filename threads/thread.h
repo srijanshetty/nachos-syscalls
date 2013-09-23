@@ -50,6 +50,11 @@
 // For simplicity, this is just the max over all architectures.
 #define MachineStateSize 18 
 
+// This is under the assumption that the children always return a positive
+// return value
+#define CHILD_EXITED -1
+#define CHILD_LIVE -2
+#define MAX_THREADS 10000
 
 // Size of the thread's private execution stack.
 // WATCH OUT IF THIS ISN'T BIG ENOUGH!!!!!
@@ -102,7 +107,13 @@ class Thread {
     void setStatus(ThreadStatus st) { status = st; }
     char* getName() { return (name); }
     void Print() { printf("%s, ", name); }
-    
+   
+    // A public pointer the parent 
+    Thread *parent;
+
+    // To store the child pid
+    int child_pids[MAX_THREADS];
+
     // Return the threads pid
     int getPid();
     int getPpid();
@@ -112,16 +123,17 @@ class Thread {
 					// Used internally by Fork()
   private:
     // some of the private data for this class is listed above
-    
+    int childCount;         // To store the number of children of the thread 
     int* stack; 	 		// Bottom of the stack 
 					// NULL if this is the main thread
 					// (If NULL, don't deallocate stack)
     ThreadStatus status;		// ready, running or blocked
     char* name;
 
-
     int pid, ppid;			// My pid and my parent's pid
-    
+   
+    // State of the child
+    int child_state[MAX_THREADS];
 #ifdef USER_PROGRAM
 // A thread running a user program actually has *two* sets of CPU registers -- 
 // one for its state while executing user code, one for its state 
@@ -132,8 +144,14 @@ class Thread {
   public:
     void SaveUserState();		// save user-level register state
     void RestoreUserState();		// restore user-level register state
-
     AddrSpace *space;			// User code this thread is running.
+
+    // To manipulate the state of the child state
+    void setChildState(int child_pid, int state);
+    void initializeChildState(int child_pid); 
+    int searchChildPid(int child_pid);
+    void incrementChildCount();     // Increments the count of the number of variables
+    void decrementChildCount();     // Decrement the count of the number of variables
 
 #endif
 };
