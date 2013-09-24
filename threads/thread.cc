@@ -32,7 +32,10 @@
 //	"threadName" is an arbitrary string, useful for debugging.
 //----------------------------------------------------------------------
 
-// Initialize the thread count initially
+// The thread count stores the total number of threads that are alive right now
+// This is unlike the pidCount which just stores the last alloted pid and wraps
+// afte the pids exhaust
+int Thread::threadCount= 0;
 int Thread::pidCount = 0;
 
 Thread::Thread(char* threadName)
@@ -45,12 +48,18 @@ Thread::Thread(char* threadName)
     
     // Initialize the parent to be NULL
     parent = NULL;
+
+    // The following two arrays maintain a sort of hash map for the status of
+    // the children
     child_status = new int[MAX_THREADS];
     child_pids = new int[MAX_THREADS];
 
     // Assign a PID to the process
-    ++pidCount;
+    pidCount = (pidCount + 1) % MAX_THREADS;
     pid = pidCount;
+
+    // Increment the thread count
+    ++threadCount;
     
     // Assign the parent PID, zero for the first thread
     if(pid == 1) {

@@ -341,7 +341,32 @@ ExceptionHandler(ExceptionType which)
         // Now the child has to set it's status to its exit status, and make it
         // ready to be destroyed, all of this must be atomic so we turn off all
         // interrupts, also we have to wake up the parent
-        interrupt->Halt();
+        
+        // Stop the machine if this is the only thread
+        if(Thread::threadCount == 1) {
+            interrupt->Halt();
+        }
+
+        // If parent is alive, signal the parent
+        if(currentThread->parent != NULL) {
+            // If the parent was waiting for this child thread then make it
+            // ready to run
+            if(currentThread->parent->getChildStatus(currentThread->getPid()) == PARENT_WAITING) {
+                // Set the return status of the child
+                currentThread->parent->setChildStatus(currentThread->getPid(), exitStatus);
+
+                // The parent is now ready to run
+                IntStatus oldLevel = interrupt->SetLevel(IntOff);	// disable interrupts
+                scheduler->ReadyToRun(currentThread->parent);
+                (void) interrupt->SetLevel(oldLevel);	// re-enable interrupts
+            }
+           
+            // Set the return status of the child
+            currentThread->parent->setChildStatus(currentThread->getPid(), exitStatus);
+        }
+
+        // Finish the current thread
+        currentThread->Finish();
     }
     else {
         printf("Unexpected user mode exception %d %d\n", which, type);

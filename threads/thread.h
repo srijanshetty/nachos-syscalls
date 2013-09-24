@@ -88,6 +88,8 @@ class Thread {
 
   public:
     static int pidCount;            // Maintain a count of pids
+    static int threadCount;         // Maintains a count of total threads
+
     Thread(char* debugName);		// initialize a Thread 
     ~Thread(); 				// deallocate a Thread
 					// NOTE -- thread being deleted
