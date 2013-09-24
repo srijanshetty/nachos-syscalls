@@ -45,7 +45,7 @@ Thread::Thread(char* threadName)
     
     // Initialize the parent to be NULL
     parent = NULL;
-    child_state = new int[MAX_THREADS];
+    child_status = new int[MAX_THREADS];
     child_pids = new int[MAX_THREADS];
 
     // Assign a PID to the process
@@ -376,29 +376,29 @@ Thread::decrementChildCount() {
 }
 
 //----------------------------------------------------------------------
-// Thread:initializeChildState
+// Thread:initializeChildStatus
 // Insert a new child and then set the state of the child to CHILD_LIVE
 //----------------------------------------------------------------------
 void
-Thread::initializeChildState(int child_pid) {
+Thread::initializeChildStatus(int child_pid) {
 	DEBUG('J', "Adding %d to the child list of %d\n", child_pid, pid);
     child_pids[childCount] = child_pid;
-    child_state[childCount] = CHILD_LIVE;
+    child_status[childCount] = CHILD_LIVE;
     incrementChildCount();
 }
 
 //----------------------------------------------------------------------
-// Thread::getChildState
+// Thread::getChildStatus
 // returns the state of the child with the given pid
 //----------------------------------------------------------------------
 int
-Thread::getChildState(int child_pid) {
+Thread::getChildStatus(int child_pid) {
     // Search the index of the child
     int index = searchChildPid(child_pid);
 
     // Check if the child exists or not
     if(index!=CHILD_NOT_FOUND) {
-        return child_state[index];
+        return child_status[index];
     } else {
         return CHILD_NOT_FOUND;
     }

@@ -206,8 +206,7 @@ ExceptionHandler(ExceptionType which)
             currentThread->Yield();
             (void) interrupt->SetLevel(oldLevel);	// re-enable interrupts
         } else {
-            ListElement *waitingThread = new ListElement(currentThread,  stats->totalTicks + time);
-            timerQueue->SortedInsert((void *)waitingThread, stats->totalTicks + time);  
+            timerQueue->SortedInsert((void *)currentThread, stats->totalTicks + time);  
             // Sleep the current Process
             IntStatus oldLevel = interrupt->SetLevel(IntOff);	// disable interrupts
             currentThread->Sleep();
@@ -227,7 +226,7 @@ ExceptionHandler(ExceptionType which)
         child->parent = currentThread;
 
         // Add the child to the parent's list
-        currentThread->initializeChildState(child->getPid());
+        currentThread->initializeChildStatus(child->getPid());
 
         // Copy the address space of the currentThread into the child thread
         // child->space = currentThread->space;
@@ -293,11 +292,11 @@ ExceptionHandler(ExceptionType which)
         // after we have searched for the pid, we check if the child is live or
         // not, if it is not live then we sleep the thread or else we just
         // return the exit status of the child directly
-        int returnValue = currentThread->getChildState(pid);
-        DEBUG('c', "Parent %d's child %d's state %d\n", currentThread->getPid(), pid, returnValue);
+        int childStatus = currentThread->getChildStatus(pid);
+        DEBUG('c', "Parent %d's child %d's state %d\n", currentThread->getPid(), pid, childStatus);
 
-        if(returnValue!= CHILD_NOT_FOUND) {
-            while(returnValue == CHILD_LIVE || returnValue == PARENT_WAITING) {
+        if(childStatus!= CHILD_NOT_FOUND) {
+            while(childStatus == CHILD_LIVE || childStatus == PARENT_WAITING) {
                 // Sleep the thread
                 IntStatus oldLevel = interrupt->SetLevel(IntOff);	// disable interrupts
                 currentThread->Sleep();
@@ -306,14 +305,22 @@ ExceptionHandler(ExceptionType which)
         }
 
         // Set the return value
-        machine->WriteRegister(2, returnValue);
+        machine->WriteRegister(2, childStatus);
     }
-    //else if ((which == SyscallException) && (type == SC_Exit)) {
-      //  int pid = machine->ReadRegister(4);
+    else if ((which == SyscallException) && (type == SC_Exit)) {
+        int exitStatus = machine->ReadRegister(4);
 
         // Note here that the exit status of the child cannot be CHILD_LIVE
-        // or PARENT_WAITING
-    //}
+        // or PARENT_WAITING, in such a case we set the return status to 0
+        if(exitStatus == CHILD_LIVE || exitStatus == PARENT_WAITING) {
+            exitStatus = 0;
+        }
+
+        // Now the child has to set it's status to its exit status, and make it
+        // ready to be destroyed, all of this must be atomic so we turn off all
+        // interrupts, also we have to wake up the parent
+        interrupt->Halt();
+    }
     else {
         printf("Unexpected user mode exception %d %d\n", which, type);
         ASSERT(FALSE);

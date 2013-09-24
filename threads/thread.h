@@ -116,7 +116,7 @@ class Thread {
     int *child_pids;
 
     // To store the state of the children
-    int *child_state;
+    int *child_status;
 
     // Return the threads pid
     int getPid();
@@ -151,8 +151,8 @@ class Thread {
 
     // To manipulate the state of the child state
     int searchChildPid(int child_pid);
-    void initializeChildState(int child_pid); 
-    int getChildState(int child_pid);
+    void initializeChildStatus(int child_pid); 
+    int getChildStatus(int child_pid);
 
     // To maintain the child counts
     void incrementChildCount();     // Increments the count of the number of variables

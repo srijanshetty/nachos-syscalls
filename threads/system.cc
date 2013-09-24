@@ -64,18 +64,24 @@ TimerInterruptHandler(int dummy)
     //if (interrupt->getStatus() != IdleMode)
 	//interrupt->YieldOnReturn();
     
+    // If the queue is empty return
     if(timerQueue->IsEmpty()) {
         return;
     }
     
     int key;
     Thread *readyThread;
-    while(timerQueue->firstKey() <= stats->totalTicks) {
+    
+    DEBUG('T', "At the timer Interrput\n");
+    // Loop throught the queue and see if any of the elements is ready to be
+    // woken up, in such a case obtain it's key and set it to readytorun
+    while(!(timerQueue->IsEmpty()) && timerQueue->firstKey() <= stats->totalTicks ) {
         readyThread = (Thread *)timerQueue->SortedRemove(&key);
-        
-        IntStatus oldLevel = interrupt->SetLevel(IntOff);	// disable interrupts
+        DEBUG('T', "\"%s\" can wake\n", readyThread->getName());
+
+        // IntStatus oldLevel = interrupt->SetLevel(IntOff);	// disable interrupts
         scheduler->ReadyToRun(readyThread);
-        (void) interrupt->SetLevel(oldLevel);	// re-enable interrupts
+        // (void) interrupt->SetLevel(oldLevel);	// re-enable interrupts
     }
 }
 

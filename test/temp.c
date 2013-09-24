@@ -18,10 +18,10 @@ main()
     int x = Fork();
     if(x == 0) {
         PrintInt(0);
-        Yield();
+        Sleep(1000);
     } else {
-        PrintInt(Join(3));
+        PrintInt(Join(2));
     }
-    Exit(0);
+    Yield();
 }
 
