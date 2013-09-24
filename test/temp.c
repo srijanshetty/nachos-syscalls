@@ -18,7 +18,7 @@ main()
     int x = Fork();
     if(x == 0) {
         PrintInt(0);
-        Sleep(100);
+        Yield();
     } else {
         PrintInt(Join(2));
     }

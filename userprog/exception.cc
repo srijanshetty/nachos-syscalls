@@ -300,7 +300,7 @@ ExceptionHandler(ExceptionType which)
         if(child_index != -1) {
             returnValue = currentThread->child_state[child_index];
             DEBUG('c', "%d", returnValue);
-            if(returnValue == CHILD_LIVE) {
+            while(returnValue == CHILD_LIVE || returnValue == PARENT_WAITING) {
                 // Sleep the thread
                 IntStatus oldLevel = interrupt->SetLevel(IntOff);	// disable interrupts
                 currentThread->Sleep();

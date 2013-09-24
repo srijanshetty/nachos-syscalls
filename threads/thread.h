@@ -52,7 +52,7 @@
 
 // This is under the assumption that the children always return a positive
 // return value
-#define CHILD_EXITED -1
+#define PARENT_WAITING -1
 #define CHILD_LIVE -2
 #define MAX_THREADS 10000
 
