@@ -293,19 +293,41 @@ ExceptionHandler(ExceptionType which)
         // not, if it is not live then we sleep the thread or else we just
         // return the exit status of the child directly
         int childStatus = currentThread->getChildStatus(pid);
-        DEBUG('c', "Parent %d's child %d's state %d\n", currentThread->getPid(), pid, childStatus);
 
         if(childStatus!= CHILD_NOT_FOUND) {
-            while(childStatus == CHILD_LIVE || childStatus == PARENT_WAITING) {
-                // Sleep the thread
+            // The very first time, the child is live, we set the status as
+            // parent waiting and send the thread to sleep, if it wakes and
+            // the status is still PARENT_WAITING, we send it to sleep
+            if(childStatus == CHILD_LIVE) {
+                currentThread->setChildStatus(pid, PARENT_WAITING);
+
+                // Send the thread to sleep
                 IntStatus oldLevel = interrupt->SetLevel(IntOff);	// disable interrupts
                 currentThread->Sleep();
                 (void) interrupt->SetLevel(oldLevel);	// re-enable interrupts
             }
+
+            while(childStatus == PARENT_WAITING) {
+                // Sleep the thread
+                DEBUG('J', "Parent %d's child %d's state %d\n", currentThread->getPid(), pid, childStatus);
+
+                IntStatus oldLevel = interrupt->SetLevel(IntOff);	// disable interrupts
+                currentThread->Sleep();
+                (void) interrupt->SetLevel(oldLevel);	// re-enable interrupts
+
+                // Obtain the new status
+                childStatus = currentThread->getChildStatus(pid);
+            }
         }
 
         // Set the return value
+        DEBUG('J', "Parent %d's child %d's state %d\n", currentThread->getPid(), pid, childStatus);
         machine->WriteRegister(2, childStatus);
+
+        // Increase the program counter after setting child Status
+        machine->WriteRegister(PrevPCReg, machine->ReadRegister(PCReg));
+        machine->WriteRegister(PCReg, machine->ReadRegister(NextPCReg));
+        machine->WriteRegister(NextPCReg, machine->ReadRegister(NextPCReg)+4);
     }
     else if ((which == SyscallException) && (type == SC_Exit)) {
         int exitStatus = machine->ReadRegister(4);

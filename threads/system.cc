@@ -72,12 +72,11 @@ TimerInterruptHandler(int dummy)
     int key;
     Thread *readyThread;
     
-    DEBUG('T', "At the timer Interrput\n");
     // Loop throught the queue and see if any of the elements is ready to be
     // woken up, in such a case obtain it's key and set it to readytorun
     while(!(timerQueue->IsEmpty()) && timerQueue->firstKey() <= stats->totalTicks ) {
         readyThread = (Thread *)timerQueue->SortedRemove(&key);
-        DEBUG('T', "\"%s\" can wake\n", readyThread->getName());
+        DEBUG('T', "\"%s\" is being woken from sleep\n", readyThread->getName());
 
         // IntStatus oldLevel = interrupt->SetLevel(IntOff);	// disable interrupts
         scheduler->ReadyToRun(readyThread);

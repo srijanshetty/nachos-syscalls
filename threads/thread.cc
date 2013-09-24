@@ -398,9 +398,31 @@ Thread::getChildStatus(int child_pid) {
 
     // Check if the child exists or not
     if(index!=CHILD_NOT_FOUND) {
+        DEBUG('J', "Found %d in %d's child list with status %d\n", child_pid, pid, child_status[index]);
         return child_status[index];
     } else {
+        DEBUG('J', "Not found %d in %d's childlist\n", child_pid, pid);
         return CHILD_NOT_FOUND;
+    }
+}
+
+
+//----------------------------------------------------------------------
+// Thread::setChildStatus
+// sets the state of the child with the given pid
+//----------------------------------------------------------------------
+void
+Thread::setChildStatus(int child_pid, int status) {
+    // Search the index of the child
+    int index = searchChildPid(child_pid);
+    DEBUG('J', "Found %d in %d's child list with status %d\n", child_pid, pid, child_status[index]);
+
+    // Check if the child exists or not
+    if(index!=CHILD_NOT_FOUND) {
+        child_status[index] = status;
+        DEBUG('J', "Found %d in %d's child list with new status %d\n", child_pid, pid, child_status[index]);
+    } else {
+        DEBUG('J', "Not found %d in %d's childlist\n", child_pid, pid);
     }
 }
 
@@ -413,13 +435,11 @@ Thread::searchChildPid(int child_pid) {
     // Loop through the child pids to get the index and then update
     for(int i = 0; i< childCount; ++i) {
         if(child_pids[i] == child_pid){
-            DEBUG('j', "Found %d in %d's childlist at %d\n", child_pid, pid, i);
             return i;
         }
     }
 
     // If control reaches here then the element has not been found
-    DEBUG('J', "Not found %d in %d's childlist", child_pid, pid);
     return CHILD_NOT_FOUND;
 }
 
