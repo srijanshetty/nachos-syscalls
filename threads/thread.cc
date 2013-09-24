@@ -424,12 +424,11 @@ void
 Thread::setChildStatus(int child_pid, int status) {
     // Search the index of the child
     int index = searchChildPid(child_pid);
-    DEBUG('J', "Found %d in %d's child list with status %d\n", child_pid, pid, child_status[index]);
 
     // Check if the child exists or not
     if(index!=CHILD_NOT_FOUND) {
         child_status[index] = status;
-        DEBUG('J', "Found %d in %d's child list with new status %d\n", child_pid, pid, child_status[index]);
+        DEBUG('J', "%d in %d's child list has new status %d\n", child_pid, pid, child_status[index]);
     } else {
         DEBUG('J', "Not found %d in %d's childlist\n", child_pid, pid);
     }

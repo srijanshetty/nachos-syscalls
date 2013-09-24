@@ -17,10 +17,10 @@ main()
 {
     int x = Fork();
     if(x == 0) {
-        Sleep(1000);
+        Exit(2);
     } else {
         PrintInt(Join(2));
     }
-    Yield();
+    Sleep(100);
 }
 

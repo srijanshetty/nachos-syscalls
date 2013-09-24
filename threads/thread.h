@@ -125,6 +125,9 @@ class Thread {
     					// Allocate a stack for thread.
 					// Used internally by Fork()
   private:
+    // To store the state of the children
+    int *child_status;
+
     // some of the private data for this class is listed above
     int childCount;         // To store the number of children of the thread 
     int* stack; 	 		// Bottom of the stack 
@@ -134,9 +137,6 @@ class Thread {
     char* name;
 
     int pid, ppid;			// My pid and my parent's pid
-
-    // To store the state of the children
-    int *child_status;
 
 #ifdef USER_PROGRAM
 // A thread running a user program actually has *two* sets of CPU registers -- 

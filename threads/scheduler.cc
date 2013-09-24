@@ -124,6 +124,8 @@ Scheduler::Run (Thread *nextThread)
     if (threadToBeDestroyed != NULL) {
         delete threadToBeDestroyed;
         threadToBeDestroyed = NULL;
+
+        // Reduce the thread Count
         --Thread::threadCount;
     }
     

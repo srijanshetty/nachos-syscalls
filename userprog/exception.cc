@@ -287,7 +287,8 @@ ExceptionHandler(ExceptionType which)
     }
     else if ((which == SyscallException) && (type == SC_Join)) {
         int pid = machine->ReadRegister(4);
-       
+        DEBUG('J', "Joining %d with %d\n", currentThread->getPid(), pid);
+
         // Search whether the child is present in the list or not,
         // after we have searched for the pid, we check if the child is live or
         // not, if it is not live then we sleep the thread or else we just
@@ -299,6 +300,7 @@ ExceptionHandler(ExceptionType which)
             // parent waiting and send the thread to sleep, if it wakes and
             // the status is still PARENT_WAITING, we send it to sleep
             if(childStatus == CHILD_LIVE) {
+                DEBUG('J', "Child %d was live: Parent %d\n", pid, currentThread->getPid());
                 currentThread->setChildStatus(pid, PARENT_WAITING);
 
                 // Send the thread to sleep
@@ -306,10 +308,13 @@ ExceptionHandler(ExceptionType which)
                 currentThread->Sleep();
                 (void) interrupt->SetLevel(oldLevel);	// re-enable interrupts
             }
-
+            
+            // The status of the thread may have changed when we come over here,
+            // so we obtain it again
+            childStatus = currentThread->getChildStatus(pid);
             while(childStatus == PARENT_WAITING) {
                 // Sleep the thread
-                DEBUG('J', "Parent %d's child %d's state %d\n", currentThread->getPid(), pid, childStatus);
+                DEBUG('J', "Parent %d  was sleeping: child %d\n", currentThread->getPid(), pid);
 
                 IntStatus oldLevel = interrupt->SetLevel(IntOff);	// disable interrupts
                 currentThread->Sleep();
@@ -331,6 +336,7 @@ ExceptionHandler(ExceptionType which)
     }
     else if ((which == SyscallException) && (type == SC_Exit)) {
         int exitStatus = machine->ReadRegister(4);
+        DEBUG('t', "Exist Status of %d is %d\n", currentThread->getPid(), exitStatus);
 
         // Note here that the exit status of the child cannot be CHILD_LIVE
         // or PARENT_WAITING, in such a case we set the return status to 0
@@ -344,6 +350,7 @@ ExceptionHandler(ExceptionType which)
         
         // Stop the machine if this is the only thread
         if(Thread::threadCount == 1) {
+            DEBUG('t', "No more threads left, halting machine\n");
             interrupt->Halt();
         }
 
@@ -351,18 +358,19 @@ ExceptionHandler(ExceptionType which)
         if(currentThread->parent != NULL) {
             // If the parent was waiting for this child thread then make it
             // ready to run
-            if(currentThread->parent->getChildStatus(currentThread->getPid()) == PARENT_WAITING) {
-                // Set the return status of the child
-                currentThread->parent->setChildStatus(currentThread->getPid(), exitStatus);
-
+            DEBUG('c', "parent of %d exists, will kill it\n", currentThread->getPid());
+            int flag = currentThread->parent->getChildStatus(currentThread->getPid());
+            
+            // Set the return status of the child
+            currentThread->parent->setChildStatus(currentThread->getPid(), exitStatus);
+           
+            // If parent was waiting for the thread
+            if(flag == PARENT_WAITING) {
                 // The parent is now ready to run
                 IntStatus oldLevel = interrupt->SetLevel(IntOff);	// disable interrupts
                 scheduler->ReadyToRun(currentThread->parent);
                 (void) interrupt->SetLevel(oldLevel);	// re-enable interrupts
             }
-           
-            // Set the return status of the child
-            currentThread->parent->setChildStatus(currentThread->getPid(), exitStatus);
         }
 
         // Finish the current thread
