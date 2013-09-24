@@ -20,7 +20,7 @@ main()
         PrintInt(0);
         Yield();
     } else {
-        PrintInt(Join(2));
+        PrintInt(Join(3));
     }
     Exit(0);
 }

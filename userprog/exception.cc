@@ -288,31 +288,32 @@ ExceptionHandler(ExceptionType which)
     }
     else if ((which == SyscallException) && (type == SC_Join)) {
         int pid = machine->ReadRegister(4);
-        int returnValue;
-
-        DEBUG('c', "In Join\n");
-        
+       
         // Search whether the child is present in the list or not,
         // after we have searched for the pid, we check if the child is live or
         // not, if it is not live then we sleep the thread or else we just
         // return the exit status of the child directly
-        int child_index = currentThread->searchChildPid(pid);
-        if(child_index != -1) {
-            returnValue = currentThread->child_state[child_index];
-            DEBUG('c', "%d", returnValue);
+        int returnValue = currentThread->getChildState(pid);
+        DEBUG('c', "Parent %d's child %d's state %d\n", currentThread->getPid(), pid, returnValue);
+
+        if(returnValue!= CHILD_NOT_FOUND) {
             while(returnValue == CHILD_LIVE || returnValue == PARENT_WAITING) {
                 // Sleep the thread
                 IntStatus oldLevel = interrupt->SetLevel(IntOff);	// disable interrupts
                 currentThread->Sleep();
                 (void) interrupt->SetLevel(oldLevel);	// re-enable interrupts
             }
-        } else {
-            returnValue = -1;
         }
 
         // Set the return value
         machine->WriteRegister(2, returnValue);
     }
+    //else if ((which == SyscallException) && (type == SC_Exit)) {
+      //  int pid = machine->ReadRegister(4);
+
+        // Note here that the exit status of the child cannot be CHILD_LIVE
+        // or PARENT_WAITING
+    //}
     else {
         printf("Unexpected user mode exception %d %d\n", which, type);
         ASSERT(FALSE);

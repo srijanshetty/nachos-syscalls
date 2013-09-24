@@ -381,10 +381,27 @@ Thread::decrementChildCount() {
 //----------------------------------------------------------------------
 void
 Thread::initializeChildState(int child_pid) {
-	DEBUG('j', "Adding %d to the child list of %d\n", child_pid, pid);
+	DEBUG('J', "Adding %d to the child list of %d\n", child_pid, pid);
     child_pids[childCount] = child_pid;
     child_state[childCount] = CHILD_LIVE;
     incrementChildCount();
+}
+
+//----------------------------------------------------------------------
+// Thread::getChildState
+// returns the state of the child with the given pid
+//----------------------------------------------------------------------
+int
+Thread::getChildState(int child_pid) {
+    // Search the index of the child
+    int index = searchChildPid(child_pid);
+
+    // Check if the child exists or not
+    if(index!=CHILD_NOT_FOUND) {
+        return child_state[index];
+    } else {
+        return CHILD_NOT_FOUND;
+    }
 }
 
 //----------------------------------------------------------------------
@@ -393,7 +410,6 @@ Thread::initializeChildState(int child_pid) {
 //----------------------------------------------------------------------
 int
 Thread::searchChildPid(int child_pid) {
-	DEBUG('j', "Searching %d's childlist for %d\n", pid, child_pid);
     // Loop through the child pids to get the index and then update
     for(int i = 0; i< childCount; ++i) {
         if(child_pids[i] == child_pid){
@@ -403,7 +419,8 @@ Thread::searchChildPid(int child_pid) {
     }
 
     // If control reaches here then the element has not been found
-    return -1;
+    DEBUG('J', "Not found %d in %d's childlist", child_pid, pid);
+    return CHILD_NOT_FOUND;
 }
 
 //----------------------------------------------------------------------

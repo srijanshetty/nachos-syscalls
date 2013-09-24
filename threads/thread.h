@@ -54,6 +54,7 @@
 // return value
 #define PARENT_WAITING -1
 #define CHILD_LIVE -2
+#define CHILD_NOT_FOUND -1
 #define MAX_THREADS 10000
 
 // Size of the thread's private execution stack.
@@ -151,7 +152,8 @@ class Thread {
     // To manipulate the state of the child state
     int searchChildPid(int child_pid);
     void initializeChildState(int child_pid); 
-   
+    int getChildState(int child_pid);
+
     // To maintain the child counts
     void incrementChildCount();     // Increments the count of the number of variables
     void decrementChildCount();     // Decrement the count of the number of variables
