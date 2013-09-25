@@ -1,4 +1,4 @@
-#SC_GetReg
+"#SC_GetReg
 This is a straightforward system call, we just read the value of the register
 using the function machine::ReadRegister and then returned the value in register
 2.
@@ -80,6 +80,6 @@ to ensure that a newly forked thread behaves like any other woken thread.
 
 #SC_Join
 1.
-
+"
 
 
