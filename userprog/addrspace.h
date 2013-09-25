@@ -48,6 +48,8 @@ class AddrSpace {
                                     // address space
     unsigned int getStartPhysPage(); // return the start address of the physical page
   private:
+    ExceptionType Translate(int virtAddr, int* physAddr, TranslationEntry *pgTable, unsigned int pgSize);
+    // To translate page table entries
     TranslationEntry *pageTable;	// Assume linear page table translation
 					// for now!
     unsigned int numPages;		// Number of pages in the virtual 
