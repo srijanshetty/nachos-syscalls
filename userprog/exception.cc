@@ -275,7 +275,7 @@ ExceptionHandler(ExceptionType which)
             printf("Unable to open file %s\n", filename);
             return;
         }
-        space = new AddrSpace(executable, 0);    
+        space = new AddrSpace(executable);    
         currentThread->space = space;
 
         delete executable;			// close file

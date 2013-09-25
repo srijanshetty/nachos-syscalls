@@ -27,11 +27,6 @@ class AddrSpace {
 					// initializing it with the program
 					// stored in the file "executable"
     
-    AddrSpace(OpenFile *executable, int exec_flag);	// Create an address space,
-					// initializing it with the program
-					// stored in the file "executable"
-                    // The exec_flag denotes whether it's an exec call
-    
     AddrSpace(unsigned int numParentPages, unsigned int parentStartPhysPage);	
                     // Create an address space,
                     // create a page table, map it to memory
