@@ -81,22 +81,19 @@ AddrSpace::AddrSpace(OpenFile *executable)
         + UserStackSize;	// we need to increase the size
     // to leave room for the stack
     numPages = divRoundUp(size, PageSize);
-    size = numPages * PageSize;
 
     ASSERT(numPages <= NumPhysPages);		// check we're not trying
     // to run anything too big --
     // at least until we have
     // virtual memory
 
-    DEBUG('a', "Initializing address space, num pages %d, size %d\n", 
-            numPages, size);
-    DEBUG('a', "totalPagesCount %d\n", totalPagesCount);
-    
+    // We have to add the totalPagesCount to the physicalPage because of the new
+    // mapping function that we have used to allocate Pages
     // first, set up the translation 
     pageTable = new TranslationEntry[numPages];
     for (i = 0; i < numPages; i++) {
         pageTable[i].virtualPage = i;	
-        pageTable[i].physicalPage = i;
+        pageTable[i].physicalPage = i + totalPagesCount;
         pageTable[i].valid = TRUE;
         pageTable[i].use = FALSE;
         pageTable[i].dirty = FALSE;
@@ -111,6 +108,15 @@ AddrSpace::AddrSpace(OpenFile *executable)
                                                 // does not go beyond available
                                                 // pages
                                                 
+    // So the earlier size assumed a one to one mapping, so we modify this bit
+    // so that it reflects the new mapping
+    // The thing is that size stores the value of 
+    size = totalPagesCount * PageSize;
+    
+    DEBUG('a', "Initializing address space, num pages %d, size %d\n", 
+            numPages, size);
+    DEBUG('a', "totalPagesCount %d\n", totalPagesCount);
+   
     // zero out the entire address space, to zero the unitialized data segment 
     // and the stack segment
     bzero(machine->mainMemory, size);
@@ -130,6 +136,98 @@ AddrSpace::AddrSpace(OpenFile *executable)
     }
 }
 
+//----------------------------------------------------------------------
+// AddrSpace::AddrSpace
+// 	Create an address space to run a user program.
+//	Load the program from a file "executable", and set everything
+//	up so that we can start executing user instructions.
+//
+//	Assumes that the object code file is in NOFF format.
+//
+//	First, set up the translation from program memory to physical 
+//  memory.
+//  The mapping has changed in the following, and this code is executed only
+//  when exec is called
+//
+//	"executable" is the file containing the object code to load into memory
+//----------------------------------------------------------------------
+
+AddrSpace::AddrSpace(OpenFile *executable, int exec_flag)
+{
+    NoffHeader noffH;
+    unsigned int i, size;
+
+    executable->ReadAt((char *)&noffH, sizeof(noffH), 0);
+    if ((noffH.noffMagic != NOFFMAGIC) && 
+            (WordToHost(noffH.noffMagic) == NOFFMAGIC))
+        SwapHeader(&noffH);
+    ASSERT(noffH.noffMagic == NOFFMAGIC);
+
+    // how big is address space?
+    size = noffH.code.size + noffH.initData.size + noffH.uninitData.size 
+        + UserStackSize;	// we need to increase the size
+    // to leave room for the stack
+    numPages = divRoundUp(size, PageSize);
+
+    ASSERT(numPages <= NumPhysPages);		// check we're not trying
+    // to run anything too big --
+    // at least until we have
+    // virtual memory
+
+    // We have to add the totalPagesCount to the physicalPage because of the new
+    // mapping function that we have used to allocate Pages
+    // first, set up the translation 
+    pageTable = new TranslationEntry[numPages];
+    for (i = 0; i < numPages; i++) {
+        pageTable[i].virtualPage = i;	
+        pageTable[i].physicalPage = i + totalPagesCount;
+        pageTable[i].valid = TRUE;
+        pageTable[i].use = FALSE;
+        pageTable[i].dirty = FALSE;
+        pageTable[i].readOnly = FALSE;  // if the code segment was entirely on 
+        // a separate page, we could set its 
+        // pages to be read-only
+    }
+
+    // Increment the totalPagesCount
+    totalPagesCount += numPages;
+    ASSERT(totalPagesCount <= NumPhysPages);  // Ensure that the totalPages Count
+                                                // does not go beyond available
+                                                // pages
+                                                
+    // So the earlier size assumed a one to one mapping, so we modify this bit
+    // so that it reflects the new mapping
+    // The thing is that size stores the value of 
+    size = totalPagesCount * PageSize;
+    
+    DEBUG('a', "Initializing address space, num pages %d, size %d\n", 
+            numPages, size);
+    DEBUG('a', "totalPagesCount %d\n", totalPagesCount);
+   
+    // zero out the entire address space, to zero the unitialized data segment 
+    // and the stack segment
+    bzero(machine->mainMemory, size);
+
+    // We translate the virtualAddr to a physical address
+    int physicalAddress;
+
+    // then, copy in the code and data segments into memory
+    if (noffH.code.size > 0) {
+        // translate noffH.code.virtualAddr to physicalAddress
+        machine->Translate(noffH.code.virtualAddr, &physicalAddress, 4, FALSE);
+        DEBUG('a', "Initializing code segment, at 0x%x, size %d\n", 
+                physicalAddress, noffH.code.size);
+        executable->ReadAt(&(machine->mainMemory[physicalAddress]),
+                noffH.code.size, noffH.code.inFileAddr);
+    }
+    if (noffH.initData.size > 0) {
+        machine->Translate(noffH.initData.virtualAddr, &physicalAddress, 4, FALSE);
+        DEBUG('a', "Initializing data segment, at 0x%x, size %d\n", 
+                physicalAddress, noffH.initData.size);
+        executable->ReadAt(&(machine->mainMemory[physicalAddress]),
+                noffH.initData.size, noffH.initData.inFileAddr);
+    }
+}
 //----------------------------------------------------------------------
 // AddrSpace::AddrSpace
 // 	Create an address space to run a user program.

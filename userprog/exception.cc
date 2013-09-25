@@ -139,16 +139,19 @@ ExceptionHandler(ExceptionType which)
     else if ((which == SyscallException) && (type == SC_GetPA)) {
         int virtAddress = machine->ReadRegister(4);
         unsigned vpn = (unsigned) virtAddress/PageSize;
+        int physAddress;
 
         // Checking conditions
         if(vpn > machine->pageTableSize) {
-            virtAddress = -1;
+            physAddress = -1;
         } else if (!machine->pageTable[vpn].valid) {
-            virtAddress = -1;
+            physAddress = -1;
         } else if (machine->pageTable[vpn].physicalPage > NumPhysPages ){
-            virtAddress = -1;
-        } 
-        machine->WriteRegister(2, virtAddress);
+            physAddress = -1;
+        } else {
+            machine->Translate(virtAddress, &physAddress, 4, FALSE);
+        }
+        machine->WriteRegister(2, (unsigned)physAddress);
 
         // Advance program counters
         machine->WriteRegister(PrevPCReg, machine->ReadRegister(PCReg));
@@ -272,7 +275,7 @@ ExceptionHandler(ExceptionType which)
             printf("Unable to open file %s\n", filename);
             return;
         }
-        space = new AddrSpace(executable);    
+        space = new AddrSpace(executable, 0);    
         currentThread->space = space;
 
         delete executable;			// close file
