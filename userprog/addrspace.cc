@@ -81,11 +81,11 @@ AddrSpace::AddrSpace(OpenFile *executable)
         + UserStackSize;	// we need to increase the size
     // to leave room for the stack
     numPages = divRoundUp(size, PageSize);
+    size = numPages * PageSize;
 
-    ASSERT(numPages <= NumPhysPages);		// check we're not trying
-    // to run anything too big --
-    // at least until we have
-    // virtual memory
+    ASSERT(numPages + totalPagesCount <= NumPhysPages);  // Ensure that the totalPages Count
+                                                // does not go beyond available
+                                                // pages
 
     // We have to add the totalPagesCount to the physicalPage because of the new
     // mapping function that we have used to allocate Pages
@@ -102,45 +102,30 @@ AddrSpace::AddrSpace(OpenFile *executable)
         // pages to be read-only
     }
 
-    // Increment the totalPagesCount
-    totalPagesCount += numPages;
-    ASSERT(totalPagesCount <= NumPhysPages);  // Ensure that the totalPages Count
-                                                // does not go beyond available
-                                                // pages
-                                                
-    // So the earlier size assumed a one to one mapping, so we modify this bit
-    // so that it reflects the new mapping
-    // The thing is that size stores the value of 
-    size = totalPagesCount * PageSize;
-    
     DEBUG('a', "Initializing address space, num pages %d, size %d\n", 
             numPages, size);
-    DEBUG('a', "totalPagesCount %d\n", totalPagesCount);
    
     // zero out the entire address space, to zero the unitialized data segment 
     // and the stack segment
-    bzero(machine->mainMemory, size);
-
-    // We translate the virtualAddr to a physical address
-    int physicalAddress;
+    bzero((machine->mainMemory+totalPagesCount*PageSize), size);
 
     // then, copy in the code and data segments into memory
     if (noffH.code.size > 0) {
-        // translate noffH.code.virtualAddr to physicalAddress
-        Translate(noffH.code.virtualAddr, &physicalAddress, pageTable, numPages);
         DEBUG('a', "Initializing code segment, at 0x%x, size %d\n", 
-                physicalAddress, noffH.code.size);
-        executable->ReadAt(&(machine->mainMemory[(unsigned)physicalAddress]),
+               noffH.code.virtualAddr, noffH.code.size);
+        executable->ReadAt(&((machine->mainMemory+totalPagesCount*PageSize)[noffH.code.virtualAddr]),
                 noffH.code.size, noffH.code.inFileAddr);
     }
     if (noffH.initData.size > 0) {
-        // translate noffH.initData.virtualAddr to physicalAddress
-        Translate(noffH.initData.virtualAddr, &physicalAddress, pageTable, numPages);
         DEBUG('a', "Initializing data segment, at 0x%x, size %d\n", 
-                physicalAddress, noffH.initData.size);
-        executable->ReadAt(&(machine->mainMemory[(unsigned)physicalAddress]),
+                noffH.initData.virtualAddr, noffH.initData.size);
+        executable->ReadAt(&((machine->mainMemory+totalPagesCount*PageSize)[noffH.initData.virtualAddr]),
                 noffH.initData.size, noffH.initData.inFileAddr);
     }
+
+    // Increment the totalPagesCount
+    totalPagesCount += numPages;
+    DEBUG('a', "totalPagesCount %d\n", totalPagesCount);
 }
 
 //----------------------------------------------------------------------
@@ -155,9 +140,8 @@ AddrSpace::AddrSpace(unsigned int numParentPages, unsigned int parentStartPhysPa
     unsigned int i, k, size;
     numPages = numParentPages;        // number of pages is equal to parent
     size = numPages * PageSize;
-    k = totalPagesCount * PageSize;
 
-    ASSERT(numPages <= NumPhysPages);		// check we're not trying
+    ASSERT(numPages + totalPagesCount <= NumPhysPages);		// check we're not trying
     // to run anything too big --
     // at least until we have
     // virtual memory
@@ -178,22 +162,20 @@ AddrSpace::AddrSpace(unsigned int numParentPages, unsigned int parentStartPhysPa
         // pages to be read-only
     }
 
-    // Increment the totalPagesCount
-    totalPagesCount += numPages;
-
-    DEBUG('a', "totalPagesCount %d\n", totalPagesCount);
-    ASSERT(totalPagesCount <= NumPhysPages);  // Ensure that the totalPages Count
-                                                // does not go beyond available
-                                                // pages
-
     // Now we have to copy the parent's code into the physical pages
-    unsigned int parentPhysEnd = parentStartPhysPage + numPages * PageSize; 
+    unsigned int parentPhysEnd = (parentStartPhysPage + numPages) * PageSize; 
     i = parentStartPhysPage * PageSize;
+    k = totalPagesCount * PageSize;
 
-    DEBUG('a', "Copying memory %d - %d to %d to %d", i, parentPhysEnd, k, k);
+    DEBUG('a', "Copying memory %d - %d to %d to %d\n", i, parentPhysEnd, k, k);
     for(; i<parentPhysEnd; ++i, ++k) {
         machine->mainMemory[k] = machine->mainMemory[i];
     }
+
+    // Increment the totalPagesCount
+    totalPagesCount += numPages;
+    DEBUG('a', "totalPagesCount %d\n", totalPagesCount);
+
 }
 //----------------------------------------------------------------------
 // AddrSpace::~AddrSpace
@@ -280,57 +262,4 @@ unsigned int AddrSpace::getNumPages()
 unsigned int AddrSpace::getStartPhysPage() 
 {
     return pageTable[0].physicalPage;
-}
-
-//----------------------------------------------------------------------
-// AddrSpace::Translate
-// This is a function which is used for translating a virtual address to a
-// physical address given a pagetable to it, this is a specialization of the
-// machin Translate function which used the pagetable of the currently running
-// thread
-//----------------------------------------------------------------------
-ExceptionType
-AddrSpace::Translate(int virtAddr, int* physAddr, TranslationEntry *pgTable, unsigned int pgSize)
-{
-    int i;
-    unsigned int vpn, offset;
-    TranslationEntry *entry;
-    unsigned int pageFrame;
-    int size = 4;
-
-    // check for alignment errors
-    if (((virtAddr & 0x3))) {
-        DEBUG('A', "alignment problem at %d, size %d!\n", virtAddr, size);
-        return AddressErrorException;
-    }
-
-    // calculate the virtual page number, and offset within the page,
-    // from the virtual address
-    vpn = (unsigned) virtAddr / PageSize;
-    offset = (unsigned) virtAddr % PageSize;
-
-    if (vpn >= pgSize) {
-        DEBUG('A', "virtual page # %d too large for page table size %d!\n", 
-                virtAddr, pgSize);
-        return AddressErrorException;
-    } else if (!pageTable[vpn].valid) {
-        DEBUG('A', "virtual page # %d too large for page table size %d!\n", 
-                virtAddr, pgSize);
-        return PageFaultException;
-    }
-    entry = &pageTable[vpn];
-
-    pageFrame = entry->physicalPage;
-
-    // if the pageFrame is too big, there is something really wrong! 
-    // An invalid translation was loaded into the page table or TLB. 
-    if (pageFrame >= NumPhysPages) { 
-        DEBUG('A', "*** frame %d > %d!\n", pageFrame, NumPhysPages);
-        return BusErrorException;
-    }
-    entry->use = TRUE;		// set the use, dirty bits
-    *physAddr = pageFrame * PageSize + offset;
-    ASSERT((*physAddr >= 0) && ((*physAddr + size) <= MemorySize));
-    DEBUG('A', "phys addr = 0x%x\n", *physAddr);
-    return NoException;
 }
