@@ -1,7 +1,13 @@
-"#SC_GetReg
+#SC_GetReg
 This is a straightforward system call, we just read the value of the register
 using the function machine::ReadRegister and then returned the value in register
-2.
+
+#SC_GetPA
+1. The syscall first checks for the various conditions where it had to fail,
+if any of them were true then it returns -1.
+
+2. Otherwise, we use machine::Translate to translate the provided virtual address
+to a physical address.
 
 #SC_GetPID and SC_GetPPID
 1. A new static variable called pidCount and a macro MAX_THREADS was defined in
@@ -79,7 +85,52 @@ to ensure that a newly forked thread behaves like any other woken thread.
 8. After this the child is scheduled to run.
 
 #SC_Join
-1.
-"
+1. First we check whether the given PID is a child of the parent by looking into
+child_pids array. If it is not, we return -1.
 
+2. If the given PID is indeed a child of the parent, we lookup it's status in the 
+parent's hash map. While the status of the child is CHILD_LIVE or PARENT_WAITING, we 
+send the parent to sleep and set the new status as PARENT_WAITING.
 
+3. To obtain the child_status we use getChildStatus and to set the child status we
+use setChildStatus, this is because child_status is a private variable.
+
+#SC_Exec
+1. To start out with, we have to obtain the string passed to the syscall, to do so, we
+have to manually translate the addresses and obtain it just like it was done in
+Print_String.
+
+2. Once we have obtained the filename, we create an instance of OpenFile with this 
+filename unless the filename being null.
+
+3. The real change which needed to be done to get SC_Exec running was a change in
+the AddrSpace constructor:
+    a. The mapping of the PageTable was changed as pointed out earlier.
+
+    b. The function bzero zeroed out the address space from the starting, it 
+    was modified so that it only zeroes out the address space from the alloted 
+    pages
+
+    c. The noff function was also modified to reflect the change in the mappinf
+    function.
+
+4. The registers of the new excutable are initialized, it's state restored.
+
+5. Finally we run the new program using Machine::Run().
+
+#SC_Exit
+1. We have some reserved exitStatus which are CHILD_LIVE and PARENT_WAITING which
+cannot be used by any thread.
+
+2. A mew static variable called ThreadCount was created in the Thread class
+which store the number of live threads. This is increment in every call of 
+Thread::Thread() and decremented when Finish is called.
+
+3. If ThreadCount is 1, we halt the machine.
+
+4. If the parent of the child is alive, we check the status of the currentThread
+in the parent's child_status array, if it is PARENT_WAITING, then we wake the
+child up.
+
+5. otherwise we just set the exit code of the child in the parent's child_status
+and Finish off the currentThread.
